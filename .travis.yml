@@ -28,16 +28,18 @@ matrix:
   fast_finish: true
   include:
     - rust: stable
+      install:
+        - rustup component add rustfmt
       script:
+        - cargo fmt -- --check
+        - travis_wait 40 cargo build --all --tests
         - cargo test --all -- --skip dpc --skip integration_test
         - cargo check --examples --all
         - cargo check --all-features --examples --all
 
     - rust: nightly
-      install:
-        - rustup component add rustfmt
       script:
-        - cargo fmt -- --check
+        - travis_wait 40 cargo build --all --tests
         - cargo test --all -- --skip dpc --skip integration_test
         - cargo check --examples --all --benches
         - cargo check --all-features --examples --all --benches
@@ -56,8 +58,8 @@ matrix:
         - cd ..
         # test algebra
         - cd algebra
-        - cargo build -p algebra --no-default-features --target thumbv6m-none-eabi
-        - cargo check --examples -p algebra --no-default-features --target thumbv6m-none-eabi
+        - cargo build -p algebra --no-default-features --features "full" --target thumbv6m-none-eabi
+        - cargo check --examples -p algebra --no-default-features --features "full" --target thumbv6m-none-eabi
         - cd ..
         # test r1cs-core
         - cd r1cs-core
@@ -66,8 +68,8 @@ matrix:
         - cd ..
         # test r1cs-std
         - cd r1cs-std
-        - cargo build -p r1cs-std --no-default-features --target thumbv6m-none-eabi
-        - cargo check --examples -p r1cs-std --no-default-features --target thumbv6m-none-eabi
+        - cargo build -p r1cs-std --no-default-features --features "full" --target thumbv6m-none-eabi
+        - cargo check --examples -p r1cs-std --no-default-features --features "full" --target thumbv6m-none-eabi
         - cd ..
         # test ff-fft
         - cd ff-fft
@@ -86,8 +88,8 @@ matrix:
         - cd ..
         # test crypto-primitives
         - cd crypto-primitives
-        - cargo build -p crypto-primitives --no-default-features --target thumbv6m-none-eabi
-        - cargo check --examples -p crypto-primitives --no-default-features --target thumbv6m-none-eabi
+        - cargo build -p crypto-primitives --no-default-features --features "r1cs" --target thumbv6m-none-eabi
+        - cargo check --examples -p crypto-primitives --no-default-features --features "r1cs" --target thumbv6m-none-eabi
         - cd ..
 
 script:

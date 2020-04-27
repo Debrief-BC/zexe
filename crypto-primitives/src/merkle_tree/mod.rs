@@ -82,13 +82,13 @@ impl<P: MerkleTreeConfig> MerkleTreePath<P> {
 }
 
 pub struct MerkleHashTree<P: MerkleTreeConfig> {
-    tree:         Vec<<P::H as FixedLengthCRH>::Output>,
+    tree: Vec<<P::H as FixedLengthCRH>::Output>,
     padding_tree: Vec<(
         <P::H as FixedLengthCRH>::Output,
         <P::H as FixedLengthCRH>::Output,
     )>,
-    parameters:   <P::H as FixedLengthCRH>::Parameters,
-    root:         Option<<P::H as FixedLengthCRH>::Output>,
+    parameters: <P::H as FixedLengthCRH>::Parameters,
+    root: Option<<P::H as FixedLengthCRH>::Output>,
 }
 
 impl<P: MerkleTreeConfig> MerkleHashTree<P> {
@@ -130,7 +130,7 @@ impl<P: MerkleTreeConfig> MerkleHashTree<P> {
         }
 
         // Compute and store the hash values for each leaf.
-        let last_level_index = level_indices.pop().unwrap();
+        let last_level_index = level_indices.pop().unwrap_or(0);
         let mut buffer = [0u8; 128];
         for (i, leaf) in leaves.iter().enumerate() {
             tree[last_level_index + i] = hash_leaf::<P::H, _>(&parameters, leaf, &mut buffer)?;
@@ -248,7 +248,7 @@ impl core::fmt::Display for MerkleTreeError {
         let msg = match self {
             MerkleTreeError::IncorrectLeafIndex(index) => {
                 format!("incorrect leaf index: {}", index)
-            },
+            }
             MerkleTreeError::IncorrectPathLength(len) => format!("incorrect path length: {}", len),
         };
         write!(f, "{}", msg)

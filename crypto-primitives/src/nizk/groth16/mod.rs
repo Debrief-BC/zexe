@@ -23,9 +23,9 @@ pub struct Groth16<
     V: ToConstraintField<E::Fr> + ?Sized,
 > {
     #[doc(hidden)]
-    _engine:         PhantomData<E>,
+    _engine: PhantomData<E>,
     #[doc(hidden)]
-    _circuit:        PhantomData<C>,
+    _circuit: PhantomData<C>,
     #[doc(hidden)]
     _verifier_input: PhantomData<V>,
 }
@@ -35,10 +35,10 @@ impl<E: PairingEngine, C: ConstraintSynthesizer<E::Fr>, V: ToConstraintField<E::
 {
     type Circuit = C;
     type AssignedCircuit = C;
+    type VerifierInput = V;
     type ProvingParameters = Parameters<E>;
     type VerificationParameters = VerifyingKey<E>;
     type PreparedVerificationParameters = PreparedVerifyingKey<E>;
-    type VerifierInput = V;
     type Proof = Proof<E>;
 
     fn setup<R: Rng>(

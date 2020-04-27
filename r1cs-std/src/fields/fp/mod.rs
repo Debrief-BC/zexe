@@ -13,7 +13,7 @@ pub mod cmp;
 
 #[derive(Debug)]
 pub struct FpGadget<F: PrimeField> {
-    pub value:    Option<F>,
+    pub value: Option<F>,
     pub variable: ConstraintVar<F>,
 }
 
@@ -270,6 +270,10 @@ impl<F: PrimeField> FieldGadget<F, F> for FpGadget<F> {
         1
     }
 
+    fn cost_of_mul_equals() -> usize {
+        1
+    }
+
     fn cost_of_inv() -> usize {
         1
     }
@@ -360,7 +364,7 @@ impl<F: PrimeField> ToBitsGadget<F> for FpGadget<F> {
                 assert_eq!(tmp.len(), num_bits as usize);
 
                 tmp
-            },
+            }
             None => vec![None; num_bits as usize],
         };
 
@@ -418,7 +422,7 @@ impl<F: PrimeField> ToBytesGadget<F> for FpGadget<F> {
                 let default = F::default();
                 let default_len = to_bytes![&default].unwrap().len();
                 vec![None; default_len]
-            },
+            }
         };
 
         let bytes = UInt8::alloc_vec(cs.ns(|| "Alloc bytes"), &byte_values)?;
@@ -434,7 +438,7 @@ impl<F: PrimeField> ToBytesGadget<F> for FpGadget<F> {
                 Boolean::Is(bit) => {
                     lc += (coeff, bit.get_variable());
                     coeff.double_in_place();
-                },
+                }
                 Boolean::Constant(_) | Boolean::Not(_) => unreachable!(),
             }
         }
@@ -573,13 +577,25 @@ impl<F: PrimeField> ThreeBitCondNegLookupGadget<F> for FpGadget<F> {
 impl<F: PrimeField> Clone for FpGadget<F> {
     fn clone(&self) -> Self {
         Self {
-            value:    self.value.clone(),
+            value: self.value.clone(),
             variable: self.variable.clone(),
         }
     }
 }
 
 impl<F: PrimeField> AllocGadget<F, F> for FpGadget<F> {
+    #[inline]
+    fn alloc_constant<T, CS: ConstraintSystem<F>>(_cs: CS, t: T) -> Result<Self, SynthesisError>
+    where
+        T: Borrow<F>,
+    {
+        let value = t.borrow().clone();
+        Ok(Self {
+            value: Some(value),
+            variable: LinearCombination::from((value, CS::one())).into(),
+        })
+    }
+
     #[inline]
     fn alloc<FN, T, CS: ConstraintSystem<F>>(
         mut cs: CS,

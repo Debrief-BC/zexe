@@ -1,6 +1,7 @@
 use crate::{
     commitment::pedersen::{PedersenCommitment, PedersenParameters, PedersenRandomness},
     crh::pedersen::PedersenWindow,
+    Vec,
 };
 use algebra_core::{
     fields::{Field, PrimeField},
@@ -15,9 +16,9 @@ use r1cs_std::prelude::*;
 #[derive(Derivative)]
 #[derivative(Clone(bound = "G: Group, W: PedersenWindow, ConstraintF: Field"))]
 pub struct PedersenCommitmentGadgetParameters<G: Group, W: PedersenWindow, ConstraintF: Field> {
-    params:  PedersenParameters<G>,
+    params: PedersenParameters<G>,
     #[doc(hidden)]
-    _group:  PhantomData<G>,
+    _group: PhantomData<G>,
     #[doc(hidden)]
     _engine: PhantomData<ConstraintF>,
     #[doc(hidden)]
@@ -97,8 +98,25 @@ where
     W: PedersenWindow,
     ConstraintF: PrimeField,
 {
-    fn alloc<F, T, CS: ConstraintSystem<ConstraintF>>(
+    fn alloc_constant<T, CS: ConstraintSystem<ConstraintF>>(
         _cs: CS,
+        val: T,
+    ) -> Result<Self, SynthesisError>
+    where
+        T: Borrow<PedersenParameters<G>>,
+    {
+        let parameters = val.borrow().clone();
+
+        Ok(PedersenCommitmentGadgetParameters {
+            params: parameters,
+            _group: PhantomData,
+            _engine: PhantomData,
+            _window: PhantomData,
+        })
+    }
+
+    fn alloc<F, T, CS: ConstraintSystem<ConstraintF>>(
+        cs: CS,
         value_gen: F,
     ) -> Result<Self, SynthesisError>
     where
@@ -106,14 +124,7 @@ where
         T: Borrow<PedersenParameters<G>>,
     {
         let temp = value_gen()?;
-        let parameters = temp.borrow().clone();
-
-        Ok(PedersenCommitmentGadgetParameters {
-            params:  parameters,
-            _group:  PhantomData,
-            _engine: PhantomData,
-            _window: PhantomData,
-        })
+        Self::alloc_constant(cs, temp)
     }
 
     fn alloc_input<F, T, CS: ConstraintSystem<ConstraintF>>(
@@ -128,8 +139,8 @@ where
         let parameters = temp.borrow().clone();
 
         Ok(PedersenCommitmentGadgetParameters {
-            params:  parameters,
-            _group:  PhantomData,
+            params: parameters,
+            _group: PhantomData,
             _engine: PhantomData,
             _window: PhantomData,
         })
@@ -141,6 +152,21 @@ where
     G: Group,
     ConstraintF: PrimeField,
 {
+    fn alloc_constant<T, CS: ConstraintSystem<ConstraintF>>(
+        mut cs: CS,
+        val: T,
+    ) -> Result<Self, SynthesisError>
+    where
+        T: Borrow<PedersenRandomness<G>>,
+    {
+        let mut result_bytes = vec![];
+        for (i, byte) in to_bytes![val.borrow().0].unwrap().into_iter().enumerate() {
+            let cur = UInt8::alloc_constant(cs.ns(|| format!("byte {}", i)), byte)?;
+            result_bytes.push(cur);
+        }
+        Ok(PedersenRandomnessGadget(result_bytes))
+    }
+
     fn alloc<F, T, CS: ConstraintSystem<ConstraintF>>(
         cs: CS,
         value_gen: F,

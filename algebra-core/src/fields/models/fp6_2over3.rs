@@ -47,8 +47,8 @@ pub trait Fp6Parameters: 'static + Send + Sync {
     Eq(bound = "P: Fp6Parameters")
 )]
 pub struct Fp6<P: Fp6Parameters> {
-    pub c0:          Fp3<P::Fp3Params>,
-    pub c1:          Fp3<P::Fp3Params>,
+    pub c0: Fp3<P::Fp3Params>,
+    pub c1: Fp3<P::Fp3Params>,
     #[derivative(Debug = "ignore")]
     #[doc(hidden)]
     pub _parameters: PhantomData<P>,
@@ -108,8 +108,8 @@ impl<P: Fp6Parameters> Fp6<P> {
 impl<P: Fp6Parameters> Zero for Fp6<P> {
     fn zero() -> Self {
         Fp6 {
-            c0:          Fp3::zero(),
-            c1:          Fp3::zero(),
+            c0: Fp3::zero(),
+            c1: Fp3::zero(),
             _parameters: PhantomData,
         }
     }
@@ -122,8 +122,8 @@ impl<P: Fp6Parameters> Zero for Fp6<P> {
 impl<P: Fp6Parameters> One for Fp6<P> {
     fn one() -> Self {
         Fp6 {
-            c0:          Fp3::one(),
-            c1:          Fp3::zero(),
+            c0: Fp3::one(),
+            c1: Fp3::zero(),
             _parameters: PhantomData,
         }
     }
@@ -155,6 +155,24 @@ impl<P: Fp6Parameters> Field for Fp6<P> {
         let mut result = *self;
         result.square_in_place();
         result
+    }
+
+    #[inline]
+    fn from_random_bytes_with_flags(bytes: &[u8]) -> Option<(Self, u8)> {
+        let split_at = bytes.len() / 2;
+        if let Some(c0) = Fp3::<P::Fp3Params>::from_random_bytes(&bytes[..split_at]) {
+            if let Some((c1, flags)) =
+                Fp3::<P::Fp3Params>::from_random_bytes_with_flags(&bytes[split_at..])
+            {
+                return Some((Fp6::new(c0, c1), flags));
+            }
+        }
+        None
+    }
+
+    #[inline]
+    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
+        Self::from_random_bytes_with_flags(bytes).map(|f| f.0)
     }
 
     fn square_in_place(&mut self) -> &mut Self {

@@ -51,9 +51,9 @@ pub trait Fp3Parameters: 'static + Send + Sync {
     Eq(bound = "P: Fp3Parameters")
 )]
 pub struct Fp3<P: Fp3Parameters> {
-    pub c0:          P::Fp,
-    pub c1:          P::Fp,
-    pub c2:          P::Fp,
+    pub c0: P::Fp,
+    pub c1: P::Fp,
+    pub c2: P::Fp,
     #[derivative(Debug = "ignore")]
     #[doc(hidden)]
     pub _parameters: PhantomData<P>,
@@ -100,9 +100,9 @@ impl<P: Fp3Parameters> Fp3<P> {
 impl<P: Fp3Parameters> Zero for Fp3<P> {
     fn zero() -> Self {
         Fp3 {
-            c0:          P::Fp::zero(),
-            c1:          P::Fp::zero(),
-            c2:          P::Fp::zero(),
+            c0: P::Fp::zero(),
+            c1: P::Fp::zero(),
+            c2: P::Fp::zero(),
             _parameters: PhantomData,
         }
     }
@@ -115,9 +115,9 @@ impl<P: Fp3Parameters> Zero for Fp3<P> {
 impl<P: Fp3Parameters> One for Fp3<P> {
     fn one() -> Self {
         Fp3 {
-            c0:          P::Fp::one(),
-            c1:          P::Fp::zero(),
-            c2:          P::Fp::zero(),
+            c0: P::Fp::one(),
+            c1: P::Fp::zero(),
+            c2: P::Fp::zero(),
             _parameters: PhantomData,
         }
     }
@@ -146,6 +146,26 @@ impl<P: Fp3Parameters> Field for Fp3<P> {
         self
     }
 
+    #[inline]
+    fn from_random_bytes_with_flags(bytes: &[u8]) -> Option<(Self, u8)> {
+        let split_at = bytes.len() / 3;
+        if let Some(c0) = P::Fp::from_random_bytes(&bytes[..split_at]) {
+            if let Some(c1) = P::Fp::from_random_bytes(&bytes[split_at..2 * split_at]) {
+                if let Some((c2, flags)) =
+                    P::Fp::from_random_bytes_with_flags(&bytes[2 * split_at..])
+                {
+                    return Some((Fp3::new(c0, c1, c2), flags));
+                }
+            }
+        }
+        None
+    }
+
+    #[inline]
+    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
+        Self::from_random_bytes_with_flags(bytes).map(|f| f.0)
+    }
+
     fn square(&self) -> Self {
         let mut result = self.clone();
         result.square_in_place();
@@ -162,10 +182,10 @@ impl<P: Fp3Parameters> Field for Fp3<P> {
 
         let s0 = a.square();
         let ab = a * &b;
-        let s1 = ab + &ab;
+        let s1 = ab.double();
         let s2 = (a - &b + &c).square();
         let bc = b * &c;
-        let s3 = bc + &bc;
+        let s3 = bc.double();
         let s4 = c.square();
 
         self.c0 = s0 + &P::mul_fp_by_nonresidue(&s3);

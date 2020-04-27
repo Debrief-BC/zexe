@@ -2,11 +2,14 @@ use algebra::{fields::BitIterator, Field};
 use core::fmt::Debug;
 use r1cs_core::{ConstraintSystem, SynthesisError};
 
-use crate::prelude::*;
+use crate::{prelude::*, Assignment};
 
 pub mod fp;
 pub mod fp12;
 pub mod fp2;
+pub mod fp3;
+pub mod fp4;
+pub mod fp6_2over3;
 pub mod fp6_3over2;
 
 pub trait FieldGadget<F: Field, ConstraintF: Field>:
@@ -185,7 +188,17 @@ pub trait FieldGadget<F: Field, ConstraintF: Field>:
         Ok(self)
     }
 
-    fn inverse<CS: ConstraintSystem<ConstraintF>>(&self, _: CS) -> Result<Self, SynthesisError>;
+    fn inverse<CS: ConstraintSystem<ConstraintF>>(
+        &self,
+        mut cs: CS,
+    ) -> Result<Self, SynthesisError> {
+        let one = Self::one(&mut cs.ns(|| "one"))?;
+        let inverse = Self::alloc(&mut cs.ns(|| "alloc inverse"), || {
+            self.get_value().and_then(|val| val.inverse()).get()
+        })?;
+        self.mul_equals(cs.ns(|| "check inv"), &inverse, &one)?;
+        Ok(inverse)
+    }
 
     fn frobenius_map<CS: ConstraintSystem<ConstraintF>>(
         &self,
@@ -248,7 +261,13 @@ pub trait FieldGadget<F: Field, ConstraintF: Field>:
 
     fn cost_of_mul() -> usize;
 
-    fn cost_of_inv() -> usize;
+    fn cost_of_mul_equals() -> usize {
+        Self::cost_of_mul() + <Self as EqGadget<ConstraintF>>::cost()
+    }
+
+    fn cost_of_inv() -> usize {
+        Self::cost_of_mul_equals()
+    }
 }
 
 #[cfg(test)]

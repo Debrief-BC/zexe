@@ -52,14 +52,11 @@ use crate::constraints::Benchmark;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 4 || args[1] == "-h" || args[1] == "--help" {
-        println!(
-            "\nHelp: Invoke this as <program> <num_inputs> <num_constraints> <output_file_path>\n"
-        );
+    if args.len() < 3 || args[1] == "-h" || args[1] == "--help" {
+        println!("\nHelp: Invoke this as <program> <num_constraints> <output_file_path>\n");
     }
-    let num_inputs: usize = args[1].parse().unwrap();
-    let num_constraints: usize = args[2].parse().unwrap();
-    let output_file_path = PathBuf::from(args[3].clone());
+    let num_constraints: usize = args[1].parse().unwrap();
+    let output_file_path = PathBuf::from(args[2].clone());
     let mut wtr = if !output_file_path.exists() {
         println!("Creating output file");
         let f = OpenOptions::new()
@@ -67,13 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .append(true)
             .open(output_file_path)?;
         let mut wtr = csv::Writer::from_writer(f);
-        wtr.write_record(&[
-            "num_inputs",
-            "num_constraints",
-            "setup",
-            "prover",
-            "verifier",
-        ])?;
+        wtr.write_record(&["num_constraints", "setup", "prover", "verifier"])?;
         wtr
     } else if output_file_path.is_file() {
         let f = OpenOptions::new().append(true).open(output_file_path)?;
@@ -130,7 +121,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let start = Instant::now();
         // let proof = Proof::read(&proof_vec[..]).unwrap();
         // Check the proof
-        let _ = verify_proof(&pvk, &proof, &inputs).unwrap();
+        let r = verify_proof(&pvk, &proof, &inputs).unwrap();
+        assert!(r);
         total_verifying += start.elapsed();
     }
 
@@ -147,15 +139,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         verifying_avg.subsec_nanos() as f64 / 1_000_000_000f64 + (verifying_avg.as_secs() as f64);
 
     println!(
-        "=== Benchmarking Groth16 with {} inputs and {} constraints: ====",
-        num_inputs, num_constraints
+        "=== Benchmarking Groth16 with {} constraints: ====",
+        num_constraints
     );
     println!("Average setup time: {:?} seconds", setup_avg);
     println!("Average proving time: {:?} seconds", proving_avg);
     println!("Average verifying time: {:?} seconds", verifying_avg);
 
     wtr.write_record(&[
-        format!("{}", num_inputs),
         format!("{}", num_constraints),
         format!("{}", setup_avg),
         format!("{}", proving_avg),

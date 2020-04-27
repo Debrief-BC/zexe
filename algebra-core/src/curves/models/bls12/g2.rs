@@ -26,7 +26,7 @@ pub struct G2Prepared<P: Bls12Parameters> {
     // Stores the coefficients of the line evaluations as calculated in
     // https://eprint.iacr.org/2013/722.pdf
     pub ell_coeffs: Vec<(Fp2<P::Fp2Params>, Fp2<P::Fp2Params>, Fp2<P::Fp2Params>)>,
-    pub infinity:   bool,
+    pub infinity: bool,
 }
 
 #[derive(Derivative)]
@@ -64,7 +64,7 @@ impl<P: Bls12Parameters> From<G2Affine<P>> for G2Prepared<P> {
         if q.is_zero() {
             return Self {
                 ell_coeffs: vec![],
-                infinity:   true,
+                infinity: true,
             };
         }
 
@@ -103,13 +103,13 @@ fn doubling_step<B: Bls12Parameters>(
     // homogeneous projective coordinates.
 
     let mut a = r.x * &r.y;
-    a.mul_by_fp(two_inv);
+    a.mul_assign_by_fp(two_inv);
     let b = r.y.square();
     let c = r.z.square();
     let e = B::G2Parameters::COEFF_B * &(c.double() + &c);
     let f = e.double() + &e;
     let mut g = b + &f;
-    g.mul_by_fp(two_inv);
+    g.mul_assign_by_fp(two_inv);
     let h = (r.y + &r.z).square() - &(b + &c);
     let i = e - &b;
     let j = r.x.square();

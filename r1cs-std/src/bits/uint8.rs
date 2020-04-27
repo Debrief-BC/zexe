@@ -10,7 +10,7 @@ use core::borrow::Borrow;
 #[derive(Clone, Debug)]
 pub struct UInt8 {
     // Least significant bit_gadget first
-    pub(crate) bits:  Vec<Boolean>,
+    pub(crate) bits: Vec<Boolean>,
     pub(crate) value: Option<u8>,
 }
 
@@ -134,19 +134,19 @@ impl UInt8 {
                     if b {
                         value.as_mut().map(|v| *v |= 1);
                     }
-                },
+                }
                 Boolean::Is(ref b) => match b.get_value() {
                     Some(true) => {
                         value.as_mut().map(|v| *v |= 1);
-                    },
-                    Some(false) => {},
+                    }
+                    Some(false) => {}
                     None => value = None,
                 },
                 Boolean::Not(ref b) => match b.get_value() {
                     Some(false) => {
                         value.as_mut().map(|v| *v |= 1);
-                    },
-                    Some(true) => {},
+                    }
+                    Some(true) => {}
                     None => value = None,
                 },
             }
@@ -214,6 +214,16 @@ impl<ConstraintF: Field> ConditionalEqGadget<ConstraintF> for UInt8 {
 impl<ConstraintF: Field> EqGadget<ConstraintF> for UInt8 {}
 
 impl<ConstraintF: Field> AllocGadget<u8, ConstraintF> for UInt8 {
+    fn alloc_constant<T, CS: ConstraintSystem<ConstraintF>>(
+        _cs: CS,
+        t: T,
+    ) -> Result<Self, SynthesisError>
+    where
+        T: Borrow<u8>,
+    {
+        Ok(UInt8::constant(*t.borrow()))
+    }
+
     fn alloc<F, T, CS: ConstraintSystem<ConstraintF>>(
         mut cs: CS,
         value_gen: F,
@@ -233,7 +243,7 @@ impl<ConstraintF: Field> AllocGadget<u8, ConstraintF> for UInt8 {
                 }
 
                 v
-            },
+            }
             _ => vec![None; 8],
         };
 
@@ -272,7 +282,7 @@ impl<ConstraintF: Field> AllocGadget<u8, ConstraintF> for UInt8 {
                 }
 
                 v
-            },
+            }
             _ => vec![None; 8],
         };
 
@@ -342,7 +352,7 @@ mod test {
                 match bit_gadget {
                     &Boolean::Constant(bit_gadget) => {
                         assert!(bit_gadget == ((b.value.unwrap() >> i) & 1 == 1));
-                    },
+                    }
                     _ => unreachable!(),
                 }
             }
@@ -351,8 +361,8 @@ mod test {
 
             for x in v.iter().zip(expected_to_be_same.iter()) {
                 match x {
-                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {},
-                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {},
+                    (&Boolean::Constant(true), &Boolean::Constant(true)) => {}
+                    (&Boolean::Constant(false), &Boolean::Constant(false)) => {}
                     _ => unreachable!(),
                 }
             }
@@ -387,13 +397,13 @@ mod test {
                 match b {
                     &Boolean::Is(ref b) => {
                         assert!(b.get_value().unwrap() == (expected & 1 == 1));
-                    },
+                    }
                     &Boolean::Not(ref b) => {
                         assert!(!b.get_value().unwrap() == (expected & 1 == 1));
-                    },
+                    }
                     &Boolean::Constant(b) => {
                         assert!(b == (expected & 1 == 1));
-                    },
+                    }
                 }
 
                 expected >>= 1;

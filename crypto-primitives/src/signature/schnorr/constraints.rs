@@ -1,3 +1,4 @@
+use crate::Vec;
 use algebra_core::{groups::Group, Field};
 use r1cs_core::{ConstraintSystem, SynthesisError};
 use r1cs_std::prelude::*;
@@ -12,8 +13,8 @@ use digest::Digest;
 pub struct SchnorrSigGadgetParameters<G: Group, ConstraintF: Field, GG: GroupGadget<G, ConstraintF>>
 {
     generator: GG,
-    _group:    PhantomData<*const G>,
-    _engine:   PhantomData<*const ConstraintF>,
+    _group: PhantomData<*const G>,
+    _engine: PhantomData<*const ConstraintF>,
 }
 
 impl<G: Group, ConstraintF: Field, GG: GroupGadget<G, ConstraintF>> Clone
@@ -22,8 +23,8 @@ impl<G: Group, ConstraintF: Field, GG: GroupGadget<G, ConstraintF>> Clone
     fn clone(&self) -> Self {
         Self {
             generator: self.generator.clone(),
-            _group:    PhantomData,
-            _engine:   PhantomData,
+            _group: PhantomData,
+            _engine: PhantomData,
         }
     }
 }
@@ -38,18 +39,18 @@ impl<G: Group, ConstraintF: Field, GG: GroupGadget<G, ConstraintF>> Clone
 pub struct SchnorrSigGadgetPk<G: Group, ConstraintF: Field, GG: GroupGadget<G, ConstraintF>> {
     pub_key: GG,
     #[doc(hidden)]
-    _group:  PhantomData<*const G>,
+    _group: PhantomData<*const G>,
     #[doc(hidden)]
     _engine: PhantomData<*const ConstraintF>,
 }
 
 pub struct SchnorrRandomizePkGadget<G: Group, ConstraintF: Field, GG: GroupGadget<G, ConstraintF>> {
     #[doc(hidden)]
-    _group:        PhantomData<*const G>,
+    _group: PhantomData<*const G>,
     #[doc(hidden)]
     _group_gadget: PhantomData<*const GG>,
     #[doc(hidden)]
-    _engine:       PhantomData<*const ConstraintF>,
+    _engine: PhantomData<*const ConstraintF>,
 }
 
 impl<G, GG, D, ConstraintF> SigRandomizePkGadget<SchnorrSignature<G, D>, ConstraintF>
@@ -81,7 +82,7 @@ where
         )?;
         Ok(SchnorrSigGadgetPk {
             pub_key: rand_pk,
-            _group:  PhantomData,
+            _group: PhantomData,
             _engine: PhantomData,
         })
     }
@@ -95,6 +96,21 @@ where
     GG: GroupGadget<G, ConstraintF>,
     D: Digest,
 {
+    fn alloc_constant<T, CS: ConstraintSystem<ConstraintF>>(
+        cs: CS,
+        val: T,
+    ) -> Result<Self, SynthesisError>
+    where
+        T: Borrow<SchnorrSigParameters<G, D>>,
+    {
+        let generator = GG::alloc_constant(cs, val.borrow().generator)?;
+        Ok(Self {
+            generator,
+            _engine: PhantomData,
+            _group: PhantomData,
+        })
+    }
+
     fn alloc<F, T, CS: ConstraintSystem<ConstraintF>>(cs: CS, f: F) -> Result<Self, SynthesisError>
     where
         F: FnOnce() -> Result<T, SynthesisError>,
@@ -132,6 +148,21 @@ where
     ConstraintF: Field,
     GG: GroupGadget<G, ConstraintF>,
 {
+    fn alloc_constant<T, CS: ConstraintSystem<ConstraintF>>(
+        cs: CS,
+        val: T,
+    ) -> Result<Self, SynthesisError>
+    where
+        T: Borrow<SchnorrPublicKey<G>>,
+    {
+        let pub_key = GG::alloc_constant(cs, val.borrow())?;
+        Ok(Self {
+            pub_key,
+            _engine: PhantomData,
+            _group: PhantomData,
+        })
+    }
+
     fn alloc<F, T, CS: ConstraintSystem<ConstraintF>>(cs: CS, f: F) -> Result<Self, SynthesisError>
     where
         F: FnOnce() -> Result<T, SynthesisError>,

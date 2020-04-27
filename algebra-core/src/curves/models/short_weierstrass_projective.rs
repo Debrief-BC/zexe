@@ -1,6 +1,7 @@
 use crate::{
     curves::models::SWModelParameters as Parameters,
     io::{Read, Result as IoResult, Write},
+    serialize::{Flags, SWFlags},
     CanonicalDeserialize, CanonicalDeserializeWithFlags, CanonicalSerialize,
     CanonicalSerializeWithFlags, ConstantSerializedSize, UniformRand, Vec,
 };
@@ -31,11 +32,11 @@ use crate::{
     Hash(bound = "P: Parameters")
 )]
 pub struct GroupAffine<P: Parameters> {
-    pub x:        P::BaseField,
-    pub y:        P::BaseField,
+    pub x: P::BaseField,
+    pub y: P::BaseField,
     pub infinity: bool,
     #[derivative(Debug = "ignore")]
-    _params:      PhantomData<P>,
+    _params: PhantomData<P>,
 }
 
 impl<P: Parameters> Display for GroupAffine<P> {
@@ -82,7 +83,7 @@ impl<P: Parameters> GroupAffine<P> {
     /// If and only if `greatest` is set will the lexicographically
     /// largest y-coordinate be selected.
     #[allow(dead_code)]
-    pub(crate) fn get_point_from_x(x: P::BaseField, greatest: bool) -> Option<Self> {
+    pub fn get_point_from_x(x: P::BaseField, greatest: bool) -> Option<Self> {
         // Compute x^3 + ax + b
         let x3b = P::add_b(&((x.square() * &x) + &P::mul_by_a(&x)));
 
@@ -154,6 +155,21 @@ impl<P: Parameters> AffineCurve for GroupAffine<P> {
         )
     }
 
+    fn from_random_bytes(bytes: &[u8]) -> Option<Self> {
+        P::BaseField::from_random_bytes_with_flags(bytes).and_then(|(x, flags)| {
+            let infinity_flag_mask = SWFlags::Infinity.u8_bitmask();
+            let positive_flag_mask = SWFlags::PositiveY.u8_bitmask();
+            // if x is valid and is zero and only the infinity flag is set, then parse this
+            // point as infinity. For all other choices, get the original point.
+            if x.is_zero() && flags == infinity_flag_mask {
+                Some(Self::zero())
+            } else {
+                let is_positive = flags & positive_flag_mask != 0;
+                Self::get_point_from_x(x, is_positive)
+            }
+        })
+    }
+
     fn mul<S: Into<<Self::ScalarField as PrimeField>::BigInt>>(&self, by: S) -> GroupProjective<P> {
         let bits = BitIterator::new(by.into());
         self.mul_bits(bits)
@@ -215,9 +231,9 @@ impl<P: Parameters> Default for GroupAffine<P> {
     Hash(bound = "P: Parameters")
 )]
 pub struct GroupProjective<P: Parameters> {
-    pub x:   P::BaseField,
-    pub y:   P::BaseField,
-    pub z:   P::BaseField,
+    pub x: P::BaseField,
+    pub y: P::BaseField,
+    pub z: P::BaseField,
     _params: PhantomData<P>,
 }
 

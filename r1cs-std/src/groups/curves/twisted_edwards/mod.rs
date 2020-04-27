@@ -21,8 +21,8 @@ pub struct MontgomeryAffineGadget<
     ConstraintF: Field,
     F: FieldGadget<P::BaseField, ConstraintF>,
 > {
-    pub x:   F,
-    pub y:   F,
+    pub x: F,
+    pub y: F,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
     #[derivative(Debug = "ignore")]
@@ -90,7 +90,7 @@ mod montgomery_affine_impl {
                         t0.mul_assign(&invy);
 
                         Ok(t0)
-                    },
+                    }
                     None => Err(SynthesisError::DivisionByZero),
                 }
             })?;
@@ -108,7 +108,7 @@ mod montgomery_affine_impl {
                         t0.mul_assign(&t1);
 
                         Ok(t0)
-                    },
+                    }
                     None => Err(SynthesisError::DivisionByZero),
                 }
             })?;
@@ -140,7 +140,7 @@ mod montgomery_affine_impl {
                     Some(d) => {
                         n.mul_assign(&d);
                         Ok(n)
-                    },
+                    }
                     None => Err(SynthesisError::DivisionByZero),
                 }
             })?;
@@ -193,8 +193,8 @@ pub struct AffineGadget<
     ConstraintF: Field,
     F: FieldGadget<P::BaseField, ConstraintF>,
 > {
-    pub x:   F,
-    pub y:   F,
+    pub x: F,
+    pub y: F,
     #[derivative(Debug = "ignore")]
     _params: PhantomData<P>,
     #[derivative(Debug = "ignore")]
@@ -492,6 +492,23 @@ mod affine_impl {
         F: FieldGadget<P::BaseField, ConstraintF>,
         Self: GroupGadget<TEAffine<P>, ConstraintF>,
     {
+        #[inline]
+        fn alloc_constant<T, CS: ConstraintSystem<ConstraintF>>(
+            mut cs: CS,
+            t: T,
+        ) -> Result<Self, SynthesisError>
+        where
+            T: Borrow<TEAffine<P>>,
+        {
+            let p = t.borrow();
+            Ok(Self {
+                x: F::alloc_constant(cs.ns(|| "x"), &p.x)?,
+                y: F::alloc_constant(cs.ns(|| "y"), &p.y)?,
+                _params: PhantomData,
+                _engine: PhantomData,
+            })
+        }
+
         fn alloc<FN, T, CS: ConstraintSystem<ConstraintF>>(
             mut cs: CS,
             value_gen: FN,
@@ -504,7 +521,7 @@ mod affine_impl {
                 Ok(ge) => {
                     let ge = *ge.borrow();
                     (Ok(ge.x), Ok(ge.y))
-                },
+                }
                 _ => (
                     Err(SynthesisError::AssignmentMissing),
                     Err(SynthesisError::AssignmentMissing),
@@ -621,7 +638,7 @@ mod affine_impl {
                 Ok(ge) => {
                     let ge = *ge.borrow();
                     (Ok(ge.x), Ok(ge.y))
-                },
+                }
                 _ => (
                     Err(SynthesisError::AssignmentMissing),
                     Err(SynthesisError::AssignmentMissing),
@@ -960,14 +977,14 @@ mod projective_impl {
                     match edwards_result {
                         None => {
                             edwards_result = Some(segment_result);
-                        },
+                        }
                         Some(ref mut edwards_result) => {
                             *edwards_result = GroupGadget::<TEAffine<P>, ConstraintF>::add(
                                 &segment_result,
                                 cs.ns(|| "edwards addition"),
                                 edwards_result,
                             )?;
-                        },
+                        }
                     }
 
                     Ok(())
@@ -1050,13 +1067,13 @@ mod projective_impl {
                     match result {
                         None => {
                             result = Some(tmp);
-                        },
+                        }
                         Some(ref mut result) => {
                             *result = tmp.add(
                                 cs.ns(|| format!("addition of window {}, {}", segment_i, i)),
                                 result,
                             )?;
-                        },
+                        }
                     }
                 }
 
@@ -1089,6 +1106,23 @@ mod projective_impl {
         F: FieldGadget<P::BaseField, ConstraintF>,
         Self: GroupGadget<TEProjective<P>, ConstraintF>,
     {
+        #[inline]
+        fn alloc_constant<T, CS: ConstraintSystem<ConstraintF>>(
+            mut cs: CS,
+            t: T,
+        ) -> Result<Self, SynthesisError>
+        where
+            T: Borrow<TEProjective<P>>,
+        {
+            let p = t.borrow().into_affine();
+            Ok(Self {
+                x: F::alloc_constant(cs.ns(|| "x"), &p.x)?,
+                y: F::alloc_constant(cs.ns(|| "y"), &p.y)?,
+                _params: PhantomData,
+                _engine: PhantomData,
+            })
+        }
+
         fn alloc<FN, T, CS: ConstraintSystem<ConstraintF>>(
             mut cs: CS,
             value_gen: FN,
@@ -1101,7 +1135,7 @@ mod projective_impl {
                 Ok(ge) => {
                     let ge = ge.borrow().into_affine();
                     (Ok(ge.x), Ok(ge.y))
-                },
+                }
                 _ => (
                     Err(SynthesisError::AssignmentMissing),
                     Err(SynthesisError::AssignmentMissing),
@@ -1223,7 +1257,7 @@ mod projective_impl {
                 Ok(ge) => {
                     let ge = ge.borrow().into_affine();
                     (Ok(ge.x), Ok(ge.y))
-                },
+                }
                 _ => (
                     Err(SynthesisError::AssignmentMissing),
                     Err(SynthesisError::AssignmentMissing),
